@@ -1,0 +1,154 @@
+Sub ReadStockDataLoop()
+    
+    Dim LastRow As Long
+    Dim Ticker As String
+    Dim StartValue As Double
+    Dim EndValue As Double
+    Dim YearlyChange As Double
+    Dim PercentChange As Double
+    Dim TotalVolume As Double
+    Dim PrintRow As Integer
+    Dim rg As Range
+    Dim cond1 As FormatCondition, cond2 As FormatCondition
+    Dim MaxIncrease As Double
+    Dim MaxDecrease As Double
+    Dim MaxVolume As Double
+    Dim MaxIncreaseT As String
+    Dim MaxDecreaseT As String
+    Dim MaxVolumeT As String
+    Dim ws As Worksheet
+    Dim MaxLocation As Range
+   
+   For Each ws In Worksheets
+   
+        'Clearing any previuous content in calculated columns
+        ws.Columns("I:Q").Clear
+   
+        'Setting the titles for new columns
+        ws.Range("I1").Value = "Ticker"
+        ws.Range("J1").Value = "Yearly Change"
+        ws.Range("K1").Value = "Percent Change"
+        ws.Range("L1").Value = "Total Stock Volume"
+        ws.Range("O2").Value = "Greatest % Increase"
+        ws.Range("O3").Value = "Greatest % Decrease"
+        ws.Range("O4").Value = "Greatest Total Volume"
+        ws.Range("P1").Value = "Ticker"
+        ws.Range("Q1").Value = "Value"
+    
+        LastRow = ws.Cells(Rows.Count, 1).End(xlUp).Row
+        PrintRow = 2
+     
+    
+        Ticker = ws.Cells(2, 1).Value
+        StartValue = ws.Cells(2, 3).Value
+        TotalVolume = ws.Cells(2, 7).Value
+    
+        ws.Range("I2").Value = Ticker
+   
+      
+       'Setting the conditional formatting
+       Set rg = ws.Range("J2", ws.Range("J2").End(xlDown))
+     
+       'define the rule for each conditional format
+       Set cond1 = rg.FormatConditions.Add(xlCellValue, xlGreater, 0)
+       Set cond2 = rg.FormatConditions.Add(xlCellValue, xlLess, 0)
+    
+        'define the format applied for each conditional format
+        With cond1
+        .Interior.Color = vbGreen
+        End With
+         
+         With cond2
+        .Interior.Color = vbRed
+        End With
+
+         
+        'Loop through all Tickers
+        For i = 2 To LastRow
+    
+                ' Add to the TotalVolume
+                TotalVolume = TotalVolume + ws.Cells(i, 7).Value
+                
+            ' Check if we are still within the same ticker, if it is not...
+            If ws.Cells(i + 1, 1).Value <> ws.Cells(i, 1).Value Then
+    
+                'Get End Value
+                EndValue = ws.Cells(i, 6).Value
+                
+                'Calculate Yearly change
+                YearlyChange = EndValue - StartValue
+                
+                'Print Yearly Change
+                ws.Cells(PrintRow, 10).Value = YearlyChange
+                
+                'Calculate Percent Change
+                If StartValue <> 0 Then
+                    PercentChange = YearlyChange / StartValue
+                Else
+                    PercentChange = 0
+                End If
+                
+                'Print Percent Change
+                ws.Cells(PrintRow, 11).Value = PercentChange
+                
+                'Print Total Stock volume
+                ws.Cells(PrintRow, 12).Value = TotalVolume
+                
+                'Assign new ticker and start value
+                Ticker = ws.Cells(i + 1, 1).Value
+                StartValue = ws.Cells(i + 1, 3).Value
+                
+                'Print in next row, increase PrintRow
+                PrintRow = PrintRow + 1
+                
+                'Print new ticker
+                 ws.Cells(PrintRow, 9).Value = Ticker
+                 
+                'Clear total
+                TotalVolume = 0
+            
+    
+            End If
+    
+        Next i
+        
+        'Getting the Max values and their tickers
+        MaxIncrease = WorksheetFunction.Max(ws.Range("K2", ws.Range("K2").End(xlDown)).Value)
+        Set MaxLocation = ws.Range("K2", ws.Range("K2").End(xlDown)).Find(MaxIncrease)
+        MaxIncreaseT = ws.Cells(MaxLocation.Row, 9).Value
+        
+             
+        MaxDecrease = WorksheetFunction.Min(ws.Range("K2", ws.Range("K2").End(xlDown)).Value)
+        Set MaxLocation = ws.Range("K2", ws.Range("K2").End(xlDown)).Find(MaxDecrease)
+        MaxDecreaseT = ws.Cells(MaxLocation.Row, 9).Value
+        
+        MaxVolume = WorksheetFunction.Max(ws.Range("L2", ws.Range("L2").End(xlDown)).Value)
+        Set MaxLocation = ws.Range("L2", ws.Range("L2").End(xlDown)).Find(MaxVolume)
+        MaxVolumeT = ws.Cells(MaxLocation.Row, 9).Value
+    
+       'Printing Max values and Tickers
+        ws.Range("Q2").Value = MaxIncrease
+        ws.Range("Q3").Value = MaxDecrease
+        ws.Range("Q4").Value = MaxVolume
+        
+        
+        ws.Range("P2").Value = MaxIncreaseT
+        ws.Range("P3").Value = MaxDecreaseT
+        ws.Range("P4").Value = MaxVolumeT
+        
+        
+        'Setting format for YearlyChange
+        ws.Range("J1", ws.Range("J1").End(xlDown)).NumberFormat = "0.00000000"
+        
+        'Setting percentage format for Percent Change
+        ws.Range("K1", ws.Range("K1").End(xlDown)).NumberFormat = "0.00%"
+        
+        'Setting percentage format for Greateast increase and decrease
+        ws.Range("Q2:Q3").NumberFormat = "0.00%"
+        
+        'Autofitting columns
+        ws.Columns("A:Q").EntireColumn.AutoFit
+  
+  Next ws
+
+End Sub
